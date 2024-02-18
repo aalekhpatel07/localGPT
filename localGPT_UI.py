@@ -102,8 +102,8 @@ st.title("LocalGPT App 💬")
 prompt = st.text_input("Input your prompt here")
 # while True:
 
-# If the user hits enter
-if prompt:
+# If the user presses button
+if st.button("Search"):
     # Then pass the prompt to the LLM
     response = st.session_state["QA"](prompt)
     answer, docs = response["result"], response["source_documents"]

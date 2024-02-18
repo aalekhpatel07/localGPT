@@ -7,6 +7,7 @@ import torch
 from langchain.docstore.document import Document
 from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
+
 from utils import get_embeddings
 
 from constants import (
@@ -15,7 +16,6 @@ from constants import (
     EMBEDDING_MODEL_NAME,
     INGEST_THREADS,
     PERSIST_DIRECTORY,
-    SOURCE_DIRECTORY,
 )
 
 
@@ -115,6 +115,11 @@ def split_documents(documents: list[Document]) -> tuple[list[Document], list[Doc
 
 @click.command()
 @click.option(
+    "--data-dir",
+    type=str,
+    required=True,
+)
+@click.option(
     "--device_type",
     default="cuda" if torch.cuda.is_available() else "cpu",
     type=click.Choice(
@@ -142,10 +147,10 @@ def split_documents(documents: list[Document]) -> tuple[list[Document], list[Doc
     ),
     help="Device to run on. (Default is cuda)",
 )
-def main(device_type):
+def main(device_type, data_dir):
     # Load documents and split in chunks
-    logging.info(f"Loading documents from {SOURCE_DIRECTORY}")
-    documents = load_documents(SOURCE_DIRECTORY)
+    logging.info(f"Loading documents from {data_dir}")
+    documents = load_documents(data_dir)
     text_documents, python_documents = split_documents(documents)
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     python_splitter = RecursiveCharacterTextSplitter.from_language(
@@ -153,7 +158,7 @@ def main(device_type):
     )
     texts = text_splitter.split_documents(text_documents)
     texts.extend(python_splitter.split_documents(python_documents))
-    logging.info(f"Loaded {len(documents)} documents from {SOURCE_DIRECTORY}")
+    logging.info(f"Loaded {len(documents)} documents from {data_dir}")
     logging.info(f"Split into {len(texts)} chunks of text")
 
     """
@@ -166,7 +171,6 @@ def main(device_type):
     embeddings = get_embeddings(device_type)
 
     logging.info(f"Loaded embeddings from {EMBEDDING_MODEL_NAME}")
-
     db = Chroma.from_documents(
         texts,
         embeddings,
